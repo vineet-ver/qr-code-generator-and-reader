@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QR Code Generator & Reader</title>
+    <style>
+     :root{
+  --bg:#0b0f14;
+  --panel: rgba(255,255,255,0.04);
+  --panel-2: rgba(255,255,255,0.03);
+  --glass-border: rgba(255,255,255,0.06);
+  --muted: rgba(255,255,255,0.65);
+  --accent: #7c5cff; /* purple accent */
+  --accent-2: #2dd4bf; /* teal accent */
+  --glass-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  --radius: 14px;
+  --glass-blur: 10px;
+  font-synthesis: none;
+}
+
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html,body{height:100%}
+body{
+  margin:24px auto;
+  padding:20px;
+  max-width:980px;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, rgba(10,12,15,1) 0%, rgba(6,8,11,1) 100%);
+  color: #e6eef8;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.45;
+}
+
+/* Page header */
+h1{
+  font-size:1.9rem;
+  margin:6px 0 8px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  color: #f8fbff;
+  text-shadow: 0 2px 18px rgba(124,92,255,0.06);
+}
+.small{font-size:0.92rem;color:var(--muted)}
+
+/* Glass card */
+.card{
+  position:relative;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:var(--radius);
+  padding:18px;
+  margin:14px 0;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  overflow: hidden;
+  transition: transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s ease;
+}
+
+/* subtle top highlight */
+.card::before{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%);
+  pointer-events:none;
+  mix-blend-mode:overlay;
+  border-radius:inherit;
+}
+
+/* card hover lift */
+.card:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(2,6,23,0.7);
+}
+
+/* forms */
+form{display:flex;flex-direction:column;gap:12px}
+label{font-size:0.88rem;color:var(--muted);display:block;margin-bottom:6px}
+
+/* inputs & selects */
+input[type="text"],
+input[type="url"],
+select,
+input[type="file"]{
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+  color: #96999e;
+  border: 1px solid rgba(255,255,255,0.04);
+  outline: none;
+  transition: box-shadow .18s ease, transform .12s ease, border-color .12s ease;
+  font-size:0.95rem;
+  backdrop-filter: blur(6px);
+}
+
+/* input focus */
+input:focus, select:focus{
+  border-color: rgba(124,92,255,0.9);
+  box-shadow: 0 6px 20px rgba(124,92,255,0.08), inset 0 1px 0 rgba(255,255,255,0.02);
+  transform: translateY(-1px);
+}
+
+/* placeholders */
+::placeholder{ color: rgba(230,238,248,0.42); opacity:1 }
+
+/* buttons */
+button, .btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:12px;
+  border: none;
+  background: linear-gradient(90deg, var(--accent), #5463ff 60%);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow: 0 8px 30px rgba(91,68,255,0.12);
+  transition: transform .14s cubic-bezier(.2,.9,.2,1), box-shadow .14s ease, opacity .12s ease;
+  font-size:0.95rem;
+}
+
+/* subtle press */
+button:active{ transform: translateY(1px) scale(.998) }
+button[disabled]{ opacity:.6; cursor:not-allowed; transform:none; box-shadow:none }
+
+/* secondary ghost button */
+.btn-ghost{
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.04);
+  color:var(--muted);
+  box-shadow: none;
+}
+
+/* layout helpers */
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1;min-width:160px}
+
+/* small text and pre */
+.small{font-size:0.9rem;color:var(--muted)}
+pre{
+  background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.01));
+  border-radius:10px;
+  padding:12px;
+  overflow:auto;
+  color:#e6eef8;
+  font-size:0.92rem;
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+/* qr image */
+img.qr{
+  width:240px;height:240px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 12px 40px rgba(2,6,23,0.5);
+  background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(255,255,255,0.02));
+  object-fit:contain;
+}
+
+/* decoded list */
+ul{padding-left:18px}
+li pre{margin:0;background:transparent;border:none;padding:0;color:#cfe9ff}
+
+/* responsive tweaks */
+@media (max-width:720px){
+  body{padding:14px}
+  img.qr{width:180px;height:180px}
+  .card{padding:14px;border-radius:12px}
+  h1{font-size:1.5rem}
+}
+/* ===== Footer Styles ===== */
+.footer {
+  width: 100%;
+  margin-top: 60px;
+  padding: 20px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  text-align: center;
+  color: #e5e5e5;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.footer-name {
+  font-weight: 700;
+  background: linear-gradient(135deg, #00bcd4, #3f51b5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.footer-links {
+  display: flex;
+  gap: 18px;
+  margin-top: 6px;
+}
+
+.footer-links a {
+  color: #aaa;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px #3f51b5;
+}
+
+/* accessibility */
+:focus{outline:2px solid rgba(124,92,255,0.12);outline-offset:2px}
+  </style>
+  </head>
+  <body>
+    <h1>QR Code Generator & Reader</h1>
+
+    <div class="card">
+      <h2>Generate QR Code</h2>
+      <form method="POST" action="{{ url_for('generate') }}">
+        <select name="mode">
+          <option value="text">Text</option>
+          <option value="link">URL (Link)</option>
+        </select>
+        <input name="content" type="text" placeholder="Enter text or URL" required>
+        <input name="box_size" type="text" placeholder="Box size (default 10)">
+        <input name="border" type="text" placeholder="Border (default 4)">
+        <input name="fg_color" type="text" placeholder="Foreground color (#000000)">
+        <input name="bg_color" type="text" placeholder="Background color (#ffffff)">
+        <select name="output">
+          <option value="view">View in browser</option>
+          <option value="download">Download PNG</option>
+        </select>
+        <button type="submit">Generate QR</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Read QR Code</h2>
+      <form method="POST" action="{{ url_for('read_qr') }}" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <button type="submit">Read QR</button>
+        <a href="{{ url_for('demo_qr') }}">Demo QR</a>
+      </form>
+
+      {% if decoded_list is defined %}
+        <h3>Decoded Results</h3>
+        {% if decoded_list %}
+          <ul>
+          {% for d in decoded_list %}
+            <li><pre>{{ d }}</pre></li>
+          {% endfor %}
+          </ul>
+        {% else %}
+          <p>No QR detected.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+    <footer class="footer">
+  <div class="footer-content">
+    <p>Crafted with 💙 by <span class="footer-name">Vineet</span></p>
+    <div class="footer-links">
+      <a href="https://github.com/vineet-ver" target="_blank">GitHub</a>
+      <a href="https://linkedin.com/in/vineet-verma-b80359250" target="_blank">LinkedIn</a>
+      <a href="mailto:vineetthakur323@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+  </body>
+</html>
